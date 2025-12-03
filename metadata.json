@@ -1,0 +1,5 @@
+{
+  "name": "CineAI Studio",
+  "description": "Una suite de edición y generación de video profesional impulsada por Google Veo y Gemini.",
+  "requestFramePermissions": []
+}
