@@ -6,8 +6,11 @@ interface EditorProps {
   assets: Asset[];
 }
 
+type FilterType = 'none' | 'grayscale' | 'sepia' | 'contrast' | 'saturate';
+
 export const Editor: React.FC<EditorProps> = ({ assets }) => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(assets.length > 0 ? assets[0] : null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('none');
 
   // If new assets arrive and nothing selected, select first
   React.useEffect(() => {
@@ -15,6 +18,11 @@ export const Editor: React.FC<EditorProps> = ({ assets }) => {
       setSelectedAsset(assets[0]);
     }
   }, [assets, selectedAsset]);
+
+  // Reset filter when asset changes
+  React.useEffect(() => {
+    setActiveFilter('none');
+  }, [selectedAsset]);
 
   const handleDownload = () => {
     if (!selectedAsset) return;
@@ -26,6 +34,16 @@ export const Editor: React.FC<EditorProps> = ({ assets }) => {
     document.body.removeChild(link);
   };
 
+  const getFilterStyle = (filter: FilterType) => {
+    switch (filter) {
+      case 'grayscale': return { filter: 'grayscale(100%)' };
+      case 'sepia': return { filter: 'sepia(100%)' };
+      case 'contrast': return { filter: 'contrast(150%)' };
+      case 'saturate': return { filter: 'saturate(200%)' };
+      default: return {};
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Top Area: Preview & Properties */}
@@ -33,12 +51,13 @@ export const Editor: React.FC<EditorProps> = ({ assets }) => {
         {/* Main Preview */}
         <div className="flex-1 bg-black flex items-center justify-center relative p-4">
           {selectedAsset ? (
-            <div className="relative max-w-full max-h-full shadow-2xl">
+            <div className="relative max-w-full max-h-full shadow-2xl group">
               {selectedAsset.type === AssetType.VIDEO ? (
                 <video 
                   src={selectedAsset.url} 
                   controls 
-                  className="max-h-[60vh] rounded-lg border border-gray-800"
+                  className="max-h-[60vh] rounded-lg border border-gray-800 transition-all duration-300"
+                  style={getFilterStyle(activeFilter)}
                   autoPlay
                   loop
                 />
@@ -46,13 +65,19 @@ export const Editor: React.FC<EditorProps> = ({ assets }) => {
                 <img 
                   src={selectedAsset.url} 
                   alt={selectedAsset.prompt} 
-                  className="max-h-[60vh] object-contain rounded-lg border border-gray-800"
+                  className="max-h-[60vh] object-contain rounded-lg border border-gray-800 transition-all duration-300"
+                  style={getFilterStyle(activeFilter)}
                 />
               )}
-              <div className="absolute top-4 right-4 flex space-x-2">
+              <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                  <span className="bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10 uppercase tracking-wider">
                    {selectedAsset.type}
                  </span>
+                 {activeFilter !== 'none' && (
+                    <span className="bg-indigo-600/80 backdrop-blur text-white text-xs px-2 py-1 rounded border border-indigo-400/30 uppercase tracking-wider">
+                      Filtro: {activeFilter}
+                    </span>
+                 )}
               </div>
             </div>
           ) : (
@@ -65,25 +90,55 @@ export const Editor: React.FC<EditorProps> = ({ assets }) => {
 
         {/* Info/Properties Panel */}
         <div className="w-80 bg-gray-900 border-l border-gray-800 p-6 overflow-y-auto hidden lg:block">
-           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Propiedades</h3>
+           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Edición y Filtros</h3>
            {selectedAsset ? (
-             <div className="space-y-4">
+             <div className="space-y-6">
                <div>
-                 <label className="text-xs text-gray-500">Prompt Original</label>
-                 <p className="text-sm text-gray-200 mt-1 italic">"{selectedAsset.prompt}"</p>
+                  <label className="text-xs text-gray-500 block mb-2">Aplicar Filtro</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['none', 'grayscale', 'sepia', 'contrast', 'saturate'] as FilterType[]).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setActiveFilter(f)}
+                        className={`px-3 py-2 text-xs rounded border transition-colors capitalize ${
+                          activeFilter === f 
+                            ? 'bg-indigo-600 border-indigo-500 text-white' 
+                            : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                        }`}
+                      >
+                        {f === 'none' ? 'Normal' : f}
+                      </button>
+                    ))}
+                  </div>
                </div>
-               <div>
-                 <label className="text-xs text-gray-500">ID del Archivo</label>
-                 <p className="text-xs text-gray-400 font-mono mt-1 break-all">{selectedAsset.id}</p>
+
+               <div className="pt-4 border-t border-gray-800">
+                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Propiedades</h3>
+                 <div className="space-y-4">
+                    <div>
+                        <label className="text-xs text-gray-500">Prompt Original</label>
+                        <p className="text-sm text-gray-200 mt-1 italic">"{selectedAsset.prompt}"</p>
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500">ID del Archivo</label>
+                        <p className="text-xs text-gray-400 font-mono mt-1 break-all">{selectedAsset.id}</p>
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500">Creado</label>
+                        <p className="text-sm text-gray-300 mt-1">{new Date(selectedAsset.createdAt).toLocaleString()}</p>
+                    </div>
+                 </div>
                </div>
-               <div>
-                 <label className="text-xs text-gray-500">Creado</label>
-                 <p className="text-sm text-gray-300 mt-1">{new Date(selectedAsset.createdAt).toLocaleString()}</p>
-               </div>
+               
                <div className="pt-4 border-t border-gray-800">
                  <Button onClick={handleDownload} variant="secondary" className="w-full text-xs">
-                   Descargar Archivo
+                   Descargar Archivo {activeFilter !== 'none' ? '(Original)' : ''}
                  </Button>
+                 {activeFilter !== 'none' && (
+                   <p className="text-[10px] text-gray-500 mt-2 text-center">
+                     Nota: La descarga guardará el archivo original sin filtros aplicados.
+                   </p>
+                 )}
                </div>
              </div>
            ) : (

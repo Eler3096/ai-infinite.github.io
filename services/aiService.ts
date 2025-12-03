@@ -3,24 +3,25 @@ import { Asset, AssetType } from "../types";
 
 // Helper to check for API Key
 export const checkApiKey = async (): Promise<boolean> => {
-  if (window.aistudio) {
+  if (typeof window !== 'undefined' && window.aistudio) {
     return await window.aistudio.hasSelectedApiKey();
   }
   return false;
 };
 
 export const promptForApiKey = async (): Promise<void> => {
-  if (window.aistudio) {
+  if (typeof window !== 'undefined' && window.aistudio) {
     await window.aistudio.openSelectKey();
   } else {
-    alert("El entorno de AI Studio no está disponible.");
+    alert("El entorno de AI Studio no está disponible. Si estás en GitHub Pages, algunas funciones de generación pueden no estar disponibles sin un backend configurado.");
   }
 };
 
 // Generate Image using Gemini 3 Pro (High Quality)
 export const generateImage = async (prompt: string, aspectRatio: string = "16:9"): Promise<Asset> => {
-  // Re-instantiate to ensure we get the latest selected key
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use safety check for process.env
+  const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
+  const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-for-ui' });
   
   // Use pro-image-preview for best quality results
   const model = 'gemini-3-pro-image-preview';
@@ -65,7 +66,8 @@ export const generateImage = async (prompt: string, aspectRatio: string = "16:9"
 
 // Generate Video using Veo
 export const generateVideo = async (prompt: string, aspectRatio: string = "16:9"): Promise<Asset> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
+  const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-for-ui' });
   const model = 'veo-3.1-fast-generate-preview';
 
   // Start the operation
@@ -91,7 +93,7 @@ export const generateVideo = async (prompt: string, aspectRatio: string = "16:9"
   }
 
   // Fetch the actual binary data using the key
-  const videoUrlWithKey = `${videoUri}&key=${process.env.API_KEY}`;
+  const videoUrlWithKey = `${videoUri}&key=${apiKey}`;
   const fetchResponse = await fetch(videoUrlWithKey);
   
   if (!fetchResponse.ok) {
