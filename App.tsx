@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Editor } from './components/Editor';
@@ -10,8 +11,10 @@ const App: React.FC = () => {
 
   const handleAssetGenerated = (asset: Asset) => {
     setAssets((prev) => [asset, ...prev]);
-    // Switch back to editor to see the result
-    setTimeout(() => setCurrentView(ViewMode.EDITOR), 100);
+    // Switch back to editor to see the result if not already there
+    if (currentView !== ViewMode.EDITOR) {
+       setTimeout(() => setCurrentView(ViewMode.EDITOR), 100);
+    }
   };
 
   return (
@@ -28,7 +31,7 @@ const App: React.FC = () => {
         
         <div className="flex-1 relative z-10 overflow-auto">
           {currentView === ViewMode.EDITOR && (
-            <Editor assets={assets} />
+            <Editor assets={assets} onAddAsset={handleAssetGenerated} />
           )}
           
           {(currentView === ViewMode.GENERATE_VIDEO || currentView === ViewMode.GENERATE_IMAGE) && (
